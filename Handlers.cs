@@ -118,7 +118,68 @@ namespace bot
                         chatId: message.Chat.Id,
                         messageId: message.MessageId);
                     break;
+                case "Cancel":
+                    await client.SendTextMessageAsync(
+                    chatId: message.Chat.Id,
+                    parseMode: ParseMode.Markdown,
+                    text: "bot will not work without location");
+                    break;
                 
+                default:
+                    if(message.Location != null)
+                    {
+                        await client.SendTextMessageAsync(
+                        chatId: message.Chat.Id,
+                        parseMode: ParseMode.Markdown,
+                        text: "Location succesfuull recieved",
+                        replyMarkup: MessageBuilder.MenuButton());
+
+                        var user = await _storage.GetUserAsync(message.Chat.Id);
+                        user.Longitude = message.Location.Longitude;
+                        user.Latitude = message.Location.Latitude;
+                        await _storage.UpdateUserAsync(user);
+
+                    }
+                    switch(message.Text)
+                    {
+                        case "Bugun vaqt":
+                            await client.SendTextMessageAsync(
+                            chatId: message.Chat.Id,
+                            parseMode: ParseMode.Markdown,
+                            text: "bugungi vaqlar");
+                            break;
+
+                        case "Ertangi vaqt":
+                            await client.SendTextMessageAsync(
+                            chatId: message.Chat.Id,
+                            parseMode: ParseMode.Markdown,
+                            text: "bugungi vaqlar");
+                            break;
+                        
+                        case "Location o'zgartirish":
+                            await client.SendTextMessageAsync(
+                            chatId: message.Chat.Id,
+                            parseMode: ParseMode.Markdown,
+                            text: "Yangi locationni yuklang",
+                            replyMarkup: MessageBuilder.LocationRequestButton());
+                            break;
+
+                        case "Sozlamalar":
+                            await client.SendTextMessageAsync(
+                            chatId: message.Chat.Id,
+                            parseMode: ParseMode.Markdown,
+                            text: "bugungi vaqlar",
+                            replyMarkup: MessageBuilder.Language());
+                            break;
+                        default:
+                            await client.SendTextMessageAsync(
+                            chatId: message.Chat.Id,
+                            parseMode: ParseMode.Markdown,
+                            text: "default message");
+                            break;
+
+                    }
+                    break;
             }
         }
     }
