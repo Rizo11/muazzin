@@ -1,7 +1,9 @@
 using System;
+using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using bot.Entity;
+using bot.HttpClients;
 using bot.Services;
 using Microsoft.Extensions.Logging;
 using Telegram.Bot;
@@ -15,11 +17,16 @@ namespace bot
     {
         private readonly ILogger<Handlers> _logger;
         private readonly IStorageService _storage;
+        private readonly ICacheService _cache;
 
-        public Handlers(ILogger<Handlers> logger, IStorageService storage)
+        public Handlers(
+            ILogger<Handlers> logger,
+            IStorageService storage, 
+            ICacheService cache)
         {
             _logger = logger;
             _storage = storage;
+            _cache = cache;
         }
 
         public Task HandleErrorAsync(ITelegramBotClient client, Exception exception, CancellationToken ctoken)
@@ -84,6 +91,7 @@ namespace bot
 
         private async Task BotOnMessageReceived(ITelegramBotClient client, Message message)
         {
+
             switch(message.Text)
             {
                 case "/start":
@@ -131,7 +139,7 @@ namespace bot
                         await client.SendTextMessageAsync(
                         chatId: message.Chat.Id,
                         parseMode: ParseMode.Markdown,
-                        text: "Location succesfuull recieved",
+                        text: "Location succesfuully recieved",
                         replyMarkup: MessageBuilder.MenuButton());
 
                         var user = await _storage.GetUserAsync(message.Chat.Id);
@@ -140,13 +148,27 @@ namespace bot
                         await _storage.UpdateUserAsync(user);
 
                     }
+                    var _user = await _storage.GetUserAsync(message.Chat.Id);
                     switch(message.Text)
                     {
                         case "Bugun vaqt":
+                            var time = await _cache.GetOrUpdatePrayerTimeAsync(message.Chat.Id, _user.Longitude, _user.Latitude);
                             await client.SendTextMessageAsync(
                             chatId: message.Chat.Id,
-                            parseMode: ParseMode.Markdown,
-                            text: "bugungi vaqlar");
+                            text:
+@$"{time.prayerTime.Timezone} da
+`Fajr` = {time.prayerTime.Fajr}
+`Quyosh` = {time.prayerTime.Sunrise}
+`Peshin` = {time.prayerTime.Dhuhr}
+`Asr` = {time.prayerTime.Asr}
+`Shom` = {time.prayerTime.Maghrib}
+`Xufton` = {time.prayerTime.Isha}
+`Yarim tun` = {time.prayerTime.Midnight}
+
+Manba = {time.prayerTime.Source}
+Uslub = {time.prayerTime.CalculationMethod}",
+                            parseMode: ParseMode.Markdown
+                            );
                             break;
 
                         case "Ertangi vaqt":
@@ -171,6 +193,14 @@ namespace bot
                             text: "bugungi vaqlar",
                             replyMarkup: MessageBuilder.Language());
                             break;
+                        case "Menu":
+                            await client.SendTextMessageAsync(
+                            chatId: message.Chat.Id,
+                            parseMode: ParseMode.Markdown,
+                            text: "Menuga qaytdingiz",
+                            replyMarkup: MessageBuilder.MenuButton());
+                            break;
+
                         default:
                             await client.SendTextMessageAsync(
                             chatId: message.Chat.Id,
