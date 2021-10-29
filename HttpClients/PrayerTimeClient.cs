@@ -31,18 +31,6 @@ namespace bot.HttpClients
             {
                 var jsonString = await httpResponse.Content.ReadAsStringAsync();
                 var dto = JsonSerializer.Deserialize<PrayerTimeDto>(jsonString).ToPrayerTimeModel();
-                // string return_val = @$"
-                // {dto.Timezone} vaqti boyicha
-                // Bomdot = {dto.Fajr}
-                // Quyosh = {dto.Sunrise}
-                // Peshin = {dto.Dhuhr}
-                // Asr = {dto.Asr}
-                // Shom = {dto.Maghrib}
-                // Xufton = {dto.Isha}
-                // Yarim tun = {dto.Midnight}
-                // Manba ={dto.Source}
-                // {dto.CalculationMethod}
-                // ";
 
                 
                 return (true, dto, null);

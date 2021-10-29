@@ -29,6 +29,7 @@ namespace bot
             {"cancel", "Cancel"},
             {"today", "Today's Times"},
             {"tomorrow", "Tomorrow's Times"},
+            {"tomorrow2", "1 min difference from yesterday"},
             {"reset", "Reset Location"},
             {"settings", "Settings"},
             {"menu", "Menu"},
@@ -52,6 +53,7 @@ namespace bot
             {"cancel", "Отмена"},
             {"today", "Сегодняшние времена"},
             {"tomorrow", "Завтрашние времена"},
+            {"tomorrow2", "1 мин разница со вчерашним днем"},
             {"reset", "Сбросить местоположение"},
             {"settings", "Настройки"},
             {"menu", "Меню"},
@@ -59,7 +61,7 @@ namespace bot
             {"zone", "часовой пояс"}
             }},
             {"Uz", new Dictionary<string, string> {
-            {"locReq", "Bot ishlashi uchun joylashuvvingiz jonat."},
+            {"locReq", "Bot ishlashi uchun joylashuvvingiz jonating."},
             {"locRes", "Rahmat. Joylashuv qabul qilindi!"},
             {"langRes", "Til muvoffaqqiyatli o'zgartirildi"},
             {"fajr", "Bomdod"},
@@ -75,6 +77,7 @@ namespace bot
             {"cancel", "Bekor qilish"},
             {"today", "Bugungi vaqt"},
             {"tomorrow", "Ertangi vaqt"},
+            {"tomorrow2", "Kechagidan 1 daqiqa farq"},
             {"reset", "Joylashuvni tiklash"},
             {"settings", "Sozlamalar"},
             {"menu", "Menyu"},
@@ -83,6 +86,7 @@ namespace bot
             }},};
         public static async Task Handler(ITelegramBotClient client, Message message, ICacheService cache, IStorageService storage, BotUser user)
         {
+            System.Console.WriteLine("hell\n");
             if(user.Latitude == 0 && user.Longitude == 0)
             {
                 System.Console.WriteLine($"Location is zero\n\n {user.Language}");
@@ -92,15 +96,6 @@ namespace bot
                     parseMode: ParseMode.Markdown,
                     replyMarkup: LocationRequestButton(user.Language)
                 );
-                    
-                // await client.SendTextMessageAsync(
-                //     chatId: message.Chat.Id,
-                //     parseMode: ParseMode.Markdown,
-                //     text: dictionary[user.Language]["locReq"],
-                //     replyMarkup: MessageBuilder.LocationRequestButton(user.Language));
-                // await client.DeleteMessageAsync(
-                //     chatId: message.Chat.Id,
-                //     messageId: message.MessageId);
             }
             if(message.Location != null)
             {
@@ -119,6 +114,7 @@ namespace bot
             if(message.Text == dictionary[user.Language]["today"])
             {
                 System.Console.WriteLine("\n\ntoday\n\n");
+                var b = "@muezzin_bot";
                 var time = await cache.GetOrUpdatePrayerTimeAsync(message.Chat.Id, user.Longitude, user.Latitude);
                 await client.SendTextMessageAsync(
                 chatId: message.Chat.Id,
@@ -134,7 +130,9 @@ namespace bot
 `{dictionary[user.Language]["midNight"]}`      `{time.prayerTime.Midnight}`
 
 `{dictionary[user.Language]["sourse"]}`    {time.prayerTime.Source}
-***{dictionary[user.Language]["method"]}***    ___{time.prayerTime.CalculationMethod}___");
+***{dictionary[user.Language]["method"]}***    ___{time.prayerTime.CalculationMethod}___
+
+***{b}***");
             }
             else if(message.Text == dictionary[user.Language]["tomorrow"])
             {
@@ -142,7 +140,7 @@ namespace bot
                 await client.SendTextMessageAsync(
                 chatId: message.Chat.Id,
                 parseMode: ParseMode.Markdown,
-                text: "tomorrow's tiems");
+                text: dictionary[user.Language]["tomorrow2"]);
             }
             else if(message.Text == dictionary[user.Language]["settings"])
             {
@@ -264,22 +262,3 @@ namespace bot
             };
     }
 }
-
-// {"locReqMes," "Assalamu Alaykum. I need your location to function."},
-// {"locResMes", "Thank you. Location received!"},
-// {"fajr", "Fajr"},
-// {"sunrise", "Sunrise"},
-// {"dhuhr", "Dhuhr"},
-// {"asr", "Asr"},
-// {"magrib", "Magrib"},
-// {"isha", "Isha"},
-// {"midNight", "Midnight"},
-// {"sourse", "Source"},
-// {"method", "Method"},
-// {"share", "Share"},
-// {"cancel", "Cancel"},
-// {"today", "Today's Times"},
-// {"tomorrow", "Tomorrow's Times"},
-// {"reset", "Reset Location"},
-// {"settings", "Settings"},
-// {"menu", "Menu"}

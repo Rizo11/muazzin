@@ -8,7 +8,7 @@ using bot.Entity;
 namespace muazzin.Migrations
 {
     [DbContext(typeof(BotDbContext))]
-    [Migration("20211029112221_Initial add 29. 15.29")]
+    [Migration("20211029125031_Initial add 29. 15.29")]
     partial class Initialadd291529
     {
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
