@@ -91,126 +91,159 @@ namespace bot
 
         private async Task BotOnMessageReceived(ITelegramBotClient client, Message message)
         {
-
-            switch(message.Text)
+            var user = await _storage.GetUserAsync(message.Chat.Id);
+            if(message.Text == "/start")
             {
-                case "/start":
-                    if(!await _storage.ExistsAsync(message.Chat.Id))
-                    {
-                        var user = new BotUser(
-                            chatId: message.Chat.Id,
-                            username: message.From.Username,
-                            fullname: $"{message.From.FirstName} {message.From.LastName}",
-                            longitude: 0,
-                            latitude: 0,
-                            address: string.Empty);
-
-                        var result = await _storage.InsertUserAsync(user);
-
-                        if(result.IsSuccess)
-                        {
-                            _logger.LogInformation($"New user added: {message.Chat.Id}");
-                        }
-                    }
-                    else
-                    {
-                        _logger.LogInformation($"User exists");
-                    }
-                    
-                    await client.SendTextMessageAsync(
+                //first time user
+                if(!await _storage.ExistsAsync(message.Chat.Id))
+                {
+                    user = new BotUser(
                         chatId: message.Chat.Id,
-                        parseMode: ParseMode.Markdown,
-                        text: "Share location?",
-                        replyMarkup: MessageBuilder.LocationRequestButton());
-                    await client.DeleteMessageAsync(
-                        chatId: message.Chat.Id,
-                        messageId: message.MessageId);
-                    break;
-                case "Cancel":
+                        username: message.From.Username,
+                        fullname: $"{message.From.FirstName} {message.From.LastName}",
+                        longitude: 0,
+                        latitude: 0,
+                        address: string.Empty,
+                        language: string.Empty);
+
+                    var result = await _storage.InsertUserAsync(user);
+
+                    if(result.IsSuccess)
+                    {
+                        _logger.LogInformation($"New user added: {message.Chat.Id}");
+                    }
                     await client.SendTextMessageAsync(
                     chatId: message.Chat.Id,
                     parseMode: ParseMode.Markdown,
-                    text: "bot will not work without location");
-                    break;
-                
-                default:
-                    if(message.Location != null)
-                    {
-                        await client.SendTextMessageAsync(
-                        chatId: message.Chat.Id,
-                        parseMode: ParseMode.Markdown,
-                        text: "Location succesfuully recieved",
-                        replyMarkup: MessageBuilder.MenuButton());
+                    text: "Language/Язык/Til",
+                    replyMarkup: MessageBuilder.StartingLanguageButton());
+                }
+                //if user exists
+                else
+                {
+                    // var user = await _storage.GetUserAsync(message.Chat.Id);
+                    _logger.LogInformation($"{user.Username}\n{user.Language}\n{user.Latitude}");
 
-                        var user = await _storage.GetUserAsync(message.Chat.Id);
-                        user.Longitude = message.Location.Longitude;
-                        user.Latitude = message.Location.Latitude;
-                        await _storage.UpdateUserAsync(user);
+                    await client.SendTextMessageAsync(
+                    chatId: message.Chat.Id,
+                    parseMode: ParseMode.Markdown,
+                    text: MessageBuilder.dictionary[user.Language]["back"]);
 
-                    }
-                    var _user = await _storage.GetUserAsync(message.Chat.Id);
-                    switch(message.Text)
-                    {
-                        case "Bugun vaqt":
-                            var time = await _cache.GetOrUpdatePrayerTimeAsync(message.Chat.Id, _user.Longitude, _user.Latitude);
-                            await client.SendTextMessageAsync(
-                            chatId: message.Chat.Id,
-                            text:
-@$"{time.prayerTime.Timezone} da
-`Fajr` = {time.prayerTime.Fajr}
-`Quyosh` = {time.prayerTime.Sunrise}
-`Peshin` = {time.prayerTime.Dhuhr}
-`Asr` = {time.prayerTime.Asr}
-`Shom` = {time.prayerTime.Maghrib}
-`Xufton` = {time.prayerTime.Isha}
-`Yarim tun` = {time.prayerTime.Midnight}
-
-Manba = {time.prayerTime.Source}
-Uslub = {time.prayerTime.CalculationMethod}",
-                            parseMode: ParseMode.Markdown
-                            );
-                            break;
-
-                        case "Ertangi vaqt":
-                            await client.SendTextMessageAsync(
-                            chatId: message.Chat.Id,
-                            parseMode: ParseMode.Markdown,
-                            text: "bugungi vaqlar");
-                            break;
-                        
-                        case "Location o'zgartirish":
-                            await client.SendTextMessageAsync(
-                            chatId: message.Chat.Id,
-                            parseMode: ParseMode.Markdown,
-                            text: "Yangi locationni yuklang",
-                            replyMarkup: MessageBuilder.LocationRequestButton());
-                            break;
-
-                        case "Sozlamalar":
-                            await client.SendTextMessageAsync(
-                            chatId: message.Chat.Id,
-                            parseMode: ParseMode.Markdown,
-                            text: "bugungi vaqlar",
-                            replyMarkup: MessageBuilder.Language());
-                            break;
-                        case "Menu":
-                            await client.SendTextMessageAsync(
-                            chatId: message.Chat.Id,
-                            parseMode: ParseMode.Markdown,
-                            text: "Menuga qaytdingiz",
-                            replyMarkup: MessageBuilder.MenuButton());
-                            break;
-
-                        default:
-                            await client.SendTextMessageAsync(
-                            chatId: message.Chat.Id,
-                            parseMode: ParseMode.Markdown,
-                            text: "default message");
-                            break;
-
-                    }
-                    break;
+                    await MessageBuilder.Handler(client, message, _cache, _storage, user);
+                }
             }
+            //after the start
+            else
+            {
+                if(message.Text == "En")
+                {
+                    user.Language = "En";
+                    await _storage.UpdateUserAsync(user);
+                    await MessageBuilder.Handler(client, message, _cache, _storage, user);
+                }
+                else if(message.Text == "Ru")
+                {
+                    user.Language = "Ru";
+                    await _storage.UpdateUserAsync(user);
+                    await MessageBuilder.Handler(client, message, _cache, _storage, user);
+                }
+                else if(message.Text == "Uz")
+                {    
+                    user.Language = "Uz";
+                    await _storage.UpdateUserAsync(user);
+                    await MessageBuilder.Handler(client, message, _cache, _storage, user);
+                }
+                else if (message.Location != null)
+                {
+                    //location update
+                    user.Longitude = message.Location.Longitude;
+                    user.Latitude = message.Location.Latitude;
+                    await _storage.UpdateUserAsync(user);
+
+                    await client.SendTextMessageAsync(
+                    chatId: message.Chat.Id,
+                    parseMode: ParseMode.Markdown,
+                    text: MessageBuilder.dictionary[user.Language]["locRes"],
+                    replyMarkup: MessageBuilder.MenuButton(user.Language));
+                }
+                else
+                {
+                    _logger.LogInformation($"{user.Username}\n{user.Language}\n{user.Latitude}");
+                    await MessageBuilder.Handler(client, message, _cache, _storage, user);
+                }
+            }
+        
+            // switch(message.Text)
+            // {
+            //     case "/start":
+            //         if(!await _storage.ExistsAsync(message.Chat.Id))
+            //         {
+            //             var user0 = new BotUser(
+            //                 chatId: message.Chat.Id,
+            //                 username: message.From.Username,
+            //                 fullname: $"{message.From.FirstName} {message.From.LastName}",
+            //                 longitude: 0,
+            //                 latitude: 0,
+            //                 address: string.Empty,
+            //                 language: string.Empty);
+
+            //             var result = await _storage.InsertUserAsync(user0);
+
+            //             if(result.IsSuccess)
+            //             {
+            //                 _logger.LogInformation($"New user added: {message.Chat.Id}");
+            //             }
+            //             _logger.LogInformation($"User exists");
+            //             await client.SendTextMessageAsync(
+            //             chatId: message.Chat.Id,
+            //             parseMode: ParseMode.Markdown,
+            //             text: "Language/Til/Язык",
+            //             replyMarkup: MessageBuilder.StartingLanguageButton());
+            //         }
+            //         else
+            //         {
+            //             var _user = await _storage.GetUserAsync(message.Chat.Id);
+            //             _logger.LogInformation($"{_user.Username}\n{_user.Language}\n{_user.Latitude}");
+            //             await MessageBuilder.Handler(client, message, _cache, _storage, _user);
+            //         }
+            //         break;
+            //     case "En":
+            //         var user = await _storage.GetUserAsync(message.Chat.Id);
+            //         user.Language = "En";
+            //         await _storage.UpdateUserAsync(user);
+            //         await MessageBuilder.Handler(client, message, _cache, _storage, user);
+            //         break;
+            //     case "Ru":
+            //         var user1 = await _storage.GetUserAsync(message.Chat.Id);
+            //         user1.Language = "Ru";
+            //         await _storage.UpdateUserAsync(user1);
+            //         await MessageBuilder.Handler(client, message, _cache, _storage, user1);
+            //         break;
+            //     case "Uz":
+            //         var user2 = await _storage.GetUserAsync(message.Chat.Id);
+            //         user2.Language = "Uz";
+            //         await _storage.UpdateUserAsync(user2);
+            //         await MessageBuilder.Handler(client, message, _cache, _storage, user2);
+            //         break;
+            //     default:
+            //         var user3 = await _storage.GetUserAsync(message.Chat.Id);
+            //         await MessageBuilder.Handler(client, message, _cache, _storage, user3);
+            //         if(message.Location != null)
+            //         {
+            //             await client.SendTextMessageAsync(
+            //             chatId: message.Chat.Id,
+            //             parseMode: ParseMode.Markdown,
+            //             text: "Location succesfuully recieved",
+            //             replyMarkup: MessageBuilder.MenuButton(user3.Language));
+
+            //             //var user = await _storage.GetUserAsync(message.Chat.Id);
+            //             user3.Longitude = message.Location.Longitude;
+            //             user3.Latitude = message.Location.Latitude;
+            //             await _storage.UpdateUserAsync(user3);
+
+            //         }
+            //         break;
+            // }
         }
     }
 }
