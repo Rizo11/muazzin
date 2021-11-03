@@ -179,8 +179,10 @@ namespace bot
                 await client.SendTextMessageAsync(
                 chatId: message.Chat.Id,
                 parseMode: ParseMode.Markdown,
-                text: $"`{dictionary[user.Language]["langRes"]}",
-                replyMarkup: MenuButton(user.Language));
+                text: $"`{dictionary[user.Language]["langRes"]}`",
+                replyMarkup: LanguageButton(user.Language));
+                System.Console.WriteLine($"---{user.Language}---");
+
             }
             
             else if(user.Latitude != 0 && user.Longitude != 0)
